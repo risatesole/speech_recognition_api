@@ -2,71 +2,50 @@ from fastapi import FastAPI, File, UploadFile,HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+import tempfile
 
 from transcription_engine import voice_transcription_engine
 from llm_conection import LLM
 
-import tempfile
+app = FastAPI()         # start fastapi
 
-# Inicializar la app FastAPI
-app = FastAPI()
-
-# Añadir middleware CORS
-origins = [
-    "http://localhost:3000",  # El origen de tu frontend
-    # Agrega otros orígenes permitidos aquí
-]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Only allow specific origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Endpoint para transcripción
-@app.post("/transcribe")
+@app.post("/transcribe")                                                         # api route
 async def transcribe(audio: UploadFile = File(...)):
-    # Crear un archivo temporal para guardar el audio subido
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_audio:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_audio:  # creates an temp audio file that is recibed from the frontend
         tmp_audio.write(await audio.read())
         tmp_audio_path = tmp_audio.name
+    result = voice_transcription_engine(tmp_audio_path)                          # call to the transcription engine
+    return JSONResponse(content=result)                                          # returns the response in json format
 
-    # Llamar al motor de transcripción usando Whisper
-    result = voice_transcription_engine(tmp_audio_path)
-
-    return JSONResponse(content=result)
-
-
-# Sample dictionary with user API keys
-users_apikeys = {
+users_apikeys = {                                                                # variable that represents all the api keys
     "user1": {
         "apikey": "myapikey"
     }
 }
-
-# Pydantic model to handle the JSON body structure
-class ContentRequest(BaseModel):
+class ContentRequest(BaseModel):                                                 # Pydantic model to handle the JSON body structure
     contents: list
 
-@app.post("/get_answer")
+@app.post("/get_answer")                                                         # get_answer api route
 async def get_answer(request: ContentRequest, key: str):
-    # Check if the provided API key is valid
     user_found = None
-    for user, details in users_apikeys.items():
+    for user, details in users_apikeys.items():                                  # Check if the provided API key is valid
         if details["apikey"] == key:
             user_found = user
             break
-
     if not user_found:
-        # If the API key is invalid, raise an HTTP 401 Unauthorized error
-        raise HTTPException(status_code=401, detail="Invalid API Key")
+        raise HTTPException(status_code=401, detail="Invalid API Key")           # If the API key is invalid, raise an HTTP 401 Unauthorized error
+    prompt = request.contents[0]["parts"][0]["text"]                             # Get the prompt from the request body
 
-    # Get the prompt from the request body
-    prompt = request.contents[0]["parts"][0]["text"]
-    
-    # Create an instance of LLM with the provided prompt
-    myLlm = LLM(prompt)
-    answer = myLlm.response()  # Get the answer
-
-    return JSONResponse(content={"answer": answer})
+    myLlm = LLM(prompt)                                                          # Create an instance of LLM with the provided prompt
+    answer = myLlm.response()                                                    # Get the answer
+    # return JSONResponse(content={"answer": answer})
+    return JSONResponse(content=answer)

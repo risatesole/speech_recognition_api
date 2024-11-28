@@ -13,13 +13,12 @@ class LLM:
         self.prompt = prompt  # Initialize with the prompt
 
     def response(self):
-        api_key = os.getenv('API_KEY') 
+        api_key = os.getenv('API_KEY')
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
 
         headers = {
             "Content-Type": "application/json"
         }
-
         # Correct the reference to use self.prompt
         data = {
             "contents": [
@@ -34,7 +33,6 @@ class LLM:
         params = {
             'key': api_key
         }
-
         # Send POST request
         response = requests.post(url, headers=headers, params=params, json=data)
 
