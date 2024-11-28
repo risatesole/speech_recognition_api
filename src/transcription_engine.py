@@ -1,16 +1,10 @@
-import speech_recognition as sr
-# Initialize the recognizer
-recognizer = sr.Recognizer()
+import whisper
+# Cargar el modelo de Whisper
+model = whisper.load_model("base")
 
-# Voice transcription engine function
+# Función para transcripción de voz usando Whisper
 def voice_transcription_engine(audio_file):
-    with sr.AudioFile(audio_file) as source:
-        audio = recognizer.record(source)
-    try:
-        text = recognizer.recognize_google(audio)
-        print(text)
-        return {"transcribed_text": text}
-    except sr.UnknownValueError:
-        return {"error": "Speech was unintelligible"}
-    except sr.RequestError as e:
-        return {"error": f"Could not request results; {e}"}
+    result = model.transcribe(audio_file, language="es")  # Especificar el idioma como español
+    print("result")
+    return {"transcribed_text": result['text']}
+

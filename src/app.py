@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import whisper
+from transcription_engine import voice_transcription_engine
 import tempfile
 
 # Inicializar la app FastAPI
@@ -19,14 +19,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Cargar el modelo de Whisper
-model = whisper.load_model("base")
-
-# Función para transcripción de voz usando Whisper
-def voice_transcription_engine(audio_file):
-    result = model.transcribe(audio_file, language="es")  # Especificar el idioma como español
-    return {"transcribed_text": result['text']}
 
 # Endpoint para transcripción
 @app.post("/transcribe")
